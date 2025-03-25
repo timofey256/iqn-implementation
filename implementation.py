@@ -7,8 +7,6 @@ import torch.optim as optim
 import torch.nn.functional as F
 from collections import deque, namedtuple
 import random
-import time
-import os
 from tqdm import tqdm
 
 # Set seed for reproducibility 
@@ -55,7 +53,7 @@ class DQN:
     """Deep Q-Network agent implementation"""
     def __init__(self, state_dim, action_dim, 
                  gamma=0.99, lr=1e-3, buffer_size=10000, batch_size=64,
-                 target_update_freq=100, eps_start=1.0, eps_end=0.01, eps_decay=0.9998):
+                 target_update_freq=1000, eps_start=1.0, eps_end=0.01, eps_decay=0.9998):
         
         self.state_dim = state_dim
         self.action_dim = action_dim
@@ -149,7 +147,7 @@ class DQN:
 
 class iDQN(DQN):
     """Iterated Deep Q-Network implementation"""
-    def __init__(self, state_dim, action_dim, K=3, D=10, T=500, **kwargs):
+    def __init__(self, state_dim, action_dim, K=3, D=10, T=750, **kwargs):
         """
         K: Number of consecutive Bellman updates to learn
         D: Frequency to update target networks to their respective online networks
@@ -255,7 +253,7 @@ class iDQN(DQN):
         
         return total_loss / self.K
 
-def train_agent(env_name, agent_type='dqn', K=3, D=10, T=500, 
+def train_agent(env_name, agent_type='dqn', K=4, D=30, T=500, 
                 num_episodes=500, max_steps=500, gamma=0.99, 
                 lr=1e-3, batch_size=64, target_update_freq=10, 
                 buffer_size=10000, ma_window=100):
@@ -399,9 +397,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Train and compare DQN and iDQN')
     parser.add_argument('--env', type=str, default='CartPole-v1', help='Gym environment')
     parser.add_argument('--episodes', type=int, default=500, help='Number of episodes')
-    parser.add_argument('--K', type=int, default=3, help='Number of consecutive Bellman updates for iDQN')
-    parser.add_argument('--D', type=int, default=10, help='Target update frequency for iDQN')
-    parser.add_argument('--T', type=int, default=100, help='Window shift frequency for iDQN')
+    parser.add_argument('--K', type=int, default=4, help='Number of consecutive Bellman updates for iDQN')
+    parser.add_argument('--D', type=int, default=30, help='Target update frequency for iDQN')
+    parser.add_argument('--T', type=int, default=750, help='Window shift frequency for iDQN')
     parser.add_argument('--ma-window', type=int, default=100, help='Moving average window size')
     
     args = parser.parse_args()
