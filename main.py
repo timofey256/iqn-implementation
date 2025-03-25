@@ -6,25 +6,25 @@ def main():
     
     # Environment settings
     parser.add_argument('--env', type=str, default='LunarLander-v3', 
-                        choices=['CartPole-v1', 'LunarLander-v2', 'Acrobot-v1'],
+                        choices=['CartPole-v1', 'LunarLander-v3', 'Acrobot-v1'],
                         help='Gym environment to use')
     
     # Training settings
-    parser.add_argument('--episodes', type=int, default=200, help='Number of training episodes')
-    parser.add_argument('--max-steps', type=int, default=500, help='Maximum steps per episode')
+    parser.add_argument('--episodes', type=int, default=400, help='Number of training episodes')
+    parser.add_argument('--max-steps', type=int, default=1_000, help='Maximum steps per episode')
     
     # Agent settings
     parser.add_argument('--gamma', type=float, default=0.99, help='Discount factor')
-    parser.add_argument('--lr', type=float, default=1e-3, help='Learning rate')
-    parser.add_argument('--batch-size', type=int, default=64, help='Batch size')
-    parser.add_argument('--buffer-size', type=int, default=10000, help='Replay buffer size')
-    parser.add_argument('--target-update-freq', type=int, default=1000, 
+    parser.add_argument('--lr', type=float, default=0.0003, help='Learning rate')
+    parser.add_argument('--batch-size', type=int, default=32, help='Batch size')
+    parser.add_argument('--buffer-size', type=int, default=10_000, help='Replay buffer size')
+    parser.add_argument('--target-update-freq', type=int, default=200, 
                        help='Target network update frequency')
     
     # iDQN specific settings
     parser.add_argument('--K', type=int, default=4, help='Number of consecutive Bellman updates for iDQN')
-    parser.add_argument('--D', type=int, default=30, help='Target update frequency for iDQN')
-    parser.add_argument('--T', type=int, default=750, help='Window shift frequency for iDQN')
+    parser.add_argument('--D', type=int, default=10, help='Target update frequency for iDQN')
+    parser.add_argument('--T', type=int, default=200, help='Window shift frequency for iDQN')
     
     # Evaluation settings
     parser.add_argument('--ma-window', type=int, default=100, help='Moving average window size')
