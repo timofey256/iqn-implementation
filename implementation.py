@@ -147,7 +147,7 @@ class DQN:
 
 class iDQN(DQN):
     """Iterated Deep Q-Network implementation"""
-    def __init__(self, state_dim, action_dim, K=3, D=10, T=750, **kwargs):
+    def __init__(self, state_dim, action_dim, K=3, D=30, T=750, **kwargs):
         """
         K: Number of consecutive Bellman updates to learn
         D: Frequency to update target networks to their respective online networks
@@ -160,12 +160,15 @@ class iDQN(DQN):
         self.T = T  # Window shift frequency
         
         # Create K online networks and K target networks
+        # L_ON = [Q_1, Q_2, Q_3, Q_4]
         self.online_networks = [QNetwork(state_dim, action_dim).to(self.device) for _ in range(K)]
+        # L_TN = [\bar{Q}_0, \bar{Q]_1, \bar{Q}_2, \bar{Q}_3]
         self.target_networks = [QNetwork(state_dim, action_dim).to(self.device) for _ in range(K)]
         
         # Initialize target networks with their respective online networks
-        for k in range(K):
-            self.target_networks[k].load_state_dict(self.online_networks[k].state_dict())
+        for k in range(1, K):
+            # \bar{Q}_k <- Q_k, i.e., L_TN[k] <- L_ON[k-1]
+            self.target_networks[k].load_state_dict(self.online_networks[k-1].state_dict())
             
         # Create an optimizer for each online network
         self.optimizers = [optim.Adam(net.parameters(), lr=kwargs.get('lr', 1e-3)) 
@@ -209,12 +212,11 @@ class iDQN(DQN):
         
         # Update each online network
         for k in range(self.K):
-            # Compute Q(s,a) for current online network
+            # Compute Q_k(s,a), i.e., L_TN[k] for current online network
             q_values = self.online_networks[k](state_batch).gather(1, action_batch)
             
-            # Compute target using previous target network (k-1) or the first target for k=0
-            target_idx = k - 1 if k > 0 else 0
-            target_network = self.target_networks[target_idx]
+            # Compute target using the corresponding target network \bar{Q}_{k-1}, i.e., L_ON[k]
+            target_network = self.target_networks[k]
             
             # Compute target Q values
             next_q_values = torch.zeros(self.batch_size, 1, device=self.device)
@@ -242,19 +244,21 @@ class iDQN(DQN):
         self.steps_done += 1
         
         # Shift window every T steps
+        # \bar{Q}_k <- Q_{k + 1}, i.e., L_TN[k] <- L_ON[k]
         if self.steps_done % self.T == 0:
-            for k in range(self.K - 1):
-                self.target_networks[k].load_state_dict(self.online_networks[k+1].state_dict())
-        
-        # Update target networks to their respective online networks every D steps
-        if self.steps_done % self.D == 0:
             for k in range(self.K - 1):
                 self.target_networks[k].load_state_dict(self.online_networks[k].state_dict())
         
+        # Update target networks to their respective online networks every D steps
+        # \bar{Q}_k <- Q_k, i.e., L_TN[k] <- L_ON[k-1]
+        if self.steps_done % self.D == 0:
+            for k in range(1, self.K):
+                self.target_networks[k].load_state_dict(self.online_networks[k - 1].state_dict())
+        
         return total_loss / self.K
 
-def train_agent(env_name, agent_type='dqn', K=4, D=30, T=500, 
-                num_episodes=500, max_steps=500, gamma=0.99, 
+def train_agent(env_name, agent_type='dqn', K=3, D=30, T=500, 
+                num_episodes=800, max_steps=500, gamma=0.99, 
                 lr=1e-3, batch_size=64, target_update_freq=10, 
                 buffer_size=10000, ma_window=100):
     """
@@ -397,7 +401,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Train and compare DQN and iDQN')
     parser.add_argument('--env', type=str, default='CartPole-v1', help='Gym environment')
     parser.add_argument('--episodes', type=int, default=500, help='Number of episodes')
-    parser.add_argument('--K', type=int, default=4, help='Number of consecutive Bellman updates for iDQN')
+    parser.add_argument('--K', type=int, default=3, help='Number of consecutive Bellman updates for iDQN')
     parser.add_argument('--D', type=int, default=30, help='Target update frequency for iDQN')
     parser.add_argument('--T', type=int, default=750, help='Window shift frequency for iDQN')
     parser.add_argument('--ma-window', type=int, default=100, help='Moving average window size')

@@ -10,7 +10,7 @@ def main():
                         help='Gym environment to use')
     
     # Training settings
-    parser.add_argument('--episodes', type=int, default=200, help='Number of training episodes')
+    parser.add_argument('--episodes', type=int, default=800, help='Number of training episodes')
     parser.add_argument('--max-steps', type=int, default=500, help='Maximum steps per episode')
     
     # Agent settings
@@ -22,7 +22,7 @@ def main():
                        help='Target network update frequency')
     
     # iDQN specific settings
-    parser.add_argument('--K', type=int, default=4, help='Number of consecutive Bellman updates for iDQN')
+    parser.add_argument('--K', type=int, default=3, help='Number of consecutive Bellman updates for iDQN')
     parser.add_argument('--D', type=int, default=30, help='Target update frequency for iDQN')
     parser.add_argument('--T', type=int, default=750, help='Window shift frequency for iDQN')
     
