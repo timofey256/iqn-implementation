@@ -9,14 +9,6 @@ from collections import deque, namedtuple
 import random
 from tqdm import tqdm
 
-# Set seed for reproducibility 
-SEED = 42
-random.seed(SEED)
-np.random.seed(SEED)
-torch.manual_seed(SEED)
-if torch.cuda.is_available():
-    torch.cuda.manual_seed(SEED)
-
 # Define the transition tuple
 Transition = namedtuple('Transition', 
                         ('state', 'action', 'reward', 'next_state', 'done'))
@@ -52,8 +44,8 @@ class QNetwork(nn.Module):
 class DQN:
     """Deep Q-Network agent implementation"""
     def __init__(self, state_dim, action_dim, 
-                 gamma=0.99, lr=1e-3, buffer_size=10000, batch_size=64,
-                 target_update_freq=1000, eps_start=1.0, eps_end=0.01, eps_decay=0.9998):
+                 gamma=0.99, lr=0.0003, buffer_size=10_000, batch_size=32,
+                 target_update_freq=200, eps_start=1.0, eps_end=0.01, eps_decay=0.995):
         
         self.state_dim = state_dim
         self.action_dim = action_dim
@@ -133,9 +125,6 @@ class DQN:
         # Optimize
         self.optimizer.zero_grad()
         loss.backward()
-        # Clip gradients
-        for param in self.q_network.parameters():
-            param.grad.data.clamp_(-1, 1)
         self.optimizer.step()
         
         # Update target network periodically
@@ -147,7 +136,7 @@ class DQN:
 
 class iDQN(DQN):
     """Iterated Deep Q-Network implementation"""
-    def __init__(self, state_dim, action_dim, K=3, D=30, T=750, **kwargs):
+    def __init__(self, state_dim, action_dim, K=4, D=10, T=150, **kwargs):
         """
         K: Number of consecutive Bellman updates to learn
         D: Frequency to update target networks to their respective online networks
@@ -160,9 +149,9 @@ class iDQN(DQN):
         self.T = T  # Window shift frequency
         
         # Create K online networks and K target networks
-        # L_ON = [Q_1, Q_2, Q_3, Q_4]
+        # L_ON = [Q_1, Q_2, ..., Q_K]
         self.online_networks = [QNetwork(state_dim, action_dim).to(self.device) for _ in range(K)]
-        # L_TN = [\bar{Q}_0, \bar{Q]_1, \bar{Q}_2, \bar{Q}_3]
+        # L_TN = [\bar{Q}_0, \bar{Q}_1, ..., \bar{Q}_{K-1}]
         self.target_networks = [QNetwork(state_dim, action_dim).to(self.device) for _ in range(K)]
         
         # Initialize target networks with their respective online networks
@@ -233,9 +222,6 @@ class iDQN(DQN):
             # Optimize
             self.optimizers[k].zero_grad()
             loss.backward()
-            # Clip gradients
-            for param in self.online_networks[k].parameters():
-                param.grad.data.clamp_(-1, 1)
             self.optimizers[k].step()
             
             total_loss += loss.item()
@@ -257,10 +243,10 @@ class iDQN(DQN):
         
         return total_loss / self.K
 
-def train_agent(env_name, agent_type='dqn', K=3, D=30, T=500, 
-                num_episodes=800, max_steps=500, gamma=0.99, 
-                lr=1e-3, batch_size=64, target_update_freq=10, 
-                buffer_size=10000, ma_window=100):
+def train_agent(env_name, agent_type='dqn', K=4, D=10, T=150, 
+                num_episodes=400, max_steps=1_000, gamma=0.99, 
+                lr=0.0003, batch_size=32, target_update_freq=200, 
+                buffer_size=10_000, ma_window=100):
     """
     Train a DQN or iDQN agent
     
@@ -283,6 +269,14 @@ def train_agent(env_name, agent_type='dqn', K=3, D=30, T=500,
         rewards: List of episode rewards
         ma_rewards: Moving average rewards
     """
+    # Set seed for reproducibility 
+    SEED = 42
+    random.seed(SEED)
+    np.random.seed(SEED)
+    torch.manual_seed(SEED)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed(SEED)
+
     # Create environment
     env = gym.make(env_name)
     
@@ -402,8 +396,8 @@ if __name__ == "__main__":
     parser.add_argument('--env', type=str, default='CartPole-v1', help='Gym environment')
     parser.add_argument('--episodes', type=int, default=500, help='Number of episodes')
     parser.add_argument('--K', type=int, default=3, help='Number of consecutive Bellman updates for iDQN')
-    parser.add_argument('--D', type=int, default=30, help='Target update frequency for iDQN')
-    parser.add_argument('--T', type=int, default=750, help='Window shift frequency for iDQN')
+    parser.add_argument('--D', type=int, default=10, help='Target update frequency for iDQN')
+    parser.add_argument('--T', type=int, default=150, help='Window shift frequency for iDQN')
     parser.add_argument('--ma-window', type=int, default=100, help='Moving average window size')
     
     args = parser.parse_args()
