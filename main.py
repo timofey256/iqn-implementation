@@ -23,7 +23,7 @@ def main():
     
     # iDQN specific settings
     parser.add_argument('--K', type=int, default=4, help='Number of consecutive Bellman updates for iDQN')
-    parser.add_argument('--D', type=int, default=10, help='Target update frequency for iDQN')
+    parser.add_argument('--D', type=int, default=5, help='Target update frequency for iDQN')
     parser.add_argument('--T', type=int, default=200, help='Window shift frequency for iDQN')
     
     # Evaluation settings
