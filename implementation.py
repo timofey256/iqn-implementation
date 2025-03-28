@@ -230,10 +230,13 @@ class iDQN(DQN):
         self.steps_done += 1
         
         # Shift window every T steps
-        # \bar{Q}_k <- Q_{k + 1}, i.e., L_TN[k] <- L_ON[k]
+        # \bar{Q}_{k - 1} <- Q_k, i.e., L_TN[k] <- L_ON[k]
+        # AND 
+        # Q_k <- Q_{k + 1}, i.e., L_ON[k] <- L_ON[k + 1]
         if self.steps_done % self.T == 0:
             for k in range(self.K - 1):
                 self.target_networks[k].load_state_dict(self.online_networks[k].state_dict())
+                self.online_networks[k].load_state_dict(self.online_networks[k + 1].state_dict())
         
         # Update target networks to their respective online networks every D steps
         # \bar{Q}_k <- Q_k, i.e., L_TN[k] <- L_ON[k-1]
